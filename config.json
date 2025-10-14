@@ -1,0 +1,14 @@
+{
+ "config": {
+ "name": "SkillboxSearchEngine",
+ "version": "0.1",
+ "max_responses": 5
+ },
+ "files": [
+ "C:/Prcommun/FinalProject/document/file001.txt",
+ "C:/Prcommun/FinalProject/document/file002.txt",
+ "C:/Prcommun/FinalProject/document/file003.txt",
+ "C:/Prcommun/FinalProject/document/file004.txt",
+ "C:/Prcommun/FinalProject/document/file005.txt" 
+ ]
+}

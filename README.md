@@ -1,1 +1,1 @@
-# Skillbox
+Необходимо загрузить все файлы в IDE и запустить main.cpp# NewTest
