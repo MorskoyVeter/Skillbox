@@ -1,5 +1,6 @@
 #include "search_server.h"
 #include <algorithm>
+#include <iostream>
 
 std::vector<std::string> SplitIntoWord(const std::string& str) {
 std::istringstream my_streamvv(str);
@@ -18,8 +19,15 @@ void SearchServer::AddRequests(json::Node rut) {
 	for (int i = 0;i < vec_str.size();i++) {
 		std::vector<std::string> str;
 		str = SplitIntoWord(vec_str[i].AsString());
+		if (str.size() > 10) {
+			std::cout << "string in "<<i+1<<" requests more 10 words" << std::endl;
+		}
 		requests_[i].insert(str.begin(), str.end());
+		if (i > 1000) {
+			std::cout << "exceeded limit 1000 requests" << std::endl;
+		}
 	}
+	
 }
 
 void SearchServer::FindDocument() {
@@ -30,6 +38,9 @@ void SearchServer::FindDocument() {
 				continue;
 			}
 			for (int i = 0;i < index_.word_to_document_freqs_[str].size();i++) {
+				if (i == size_) {
+					break;
+				}
 				summrel[index_.word_to_document_freqs_[str][i].doc_id]
 					+= index_.word_to_document_freqs_[str][i].relev;
 			}
@@ -39,7 +50,12 @@ void SearchServer::FindDocument() {
 			ans.push_back(*it);
 		}
 		std::sort(ans.begin(), ans.end(), [](const auto& lhs, const auto& rhs) {
-			return lhs.second > rhs.second;
+			if (lhs.second != rhs.second) {
+				return lhs.second > rhs.second;
+			}
+			else {
+				return lhs.first > rhs.first;
+			}
 			});
 	answer_vec_.emplace_back(ans);
 	}

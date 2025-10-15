@@ -1,6 +1,6 @@
 #include "json_input.h"
 
-void JsonInput::SetNodeInput(int size) {
+void JsonInput::SetNodeInput() {
 	json::Builder builder;
 	std::string id_key = "docid";
 	std::string rank_value = "rank";
@@ -23,29 +23,13 @@ void JsonInput::SetNodeInput(int size) {
 			}
 			builder.Key(requests).StartDict();
 			if (answer_[i].size() > 0) {
-				builder.Key("result").Value("true").Key("relevance").StartDict();
+				builder.Key("result").Value("true").Key("relevance").StartArray();
 				for (int j = 0;j < answer_[i].size();j++) {
-					if (j == size) {
-						break;
-					}
-					id_key += std::to_string(j);
-					rank_value += std::to_string(j);
-					builder.Key(id_key).Value(answer_[i][j].first)
-						   .Key(rank_value).Value(answer_[i][j].second);
-					if (j < 9) {
-						id_key.erase(id_key.length() - 1);
-						rank_value.erase(rank_value.length() - 1);
-					}
-					else if (j > 8 && j < 99) {
-						id_key.erase(id_key.length() - 2);
-						rank_value.erase(rank_value.length() - 1);
-					}
-					else {
-						id_key.erase(id_key.length() - 3);
-						rank_value.erase(rank_value.length() - 1);
-					}
+					builder.StartDict().Key(id_key).Value(answer_[i][j].first)
+						   .Key(rank_value).Value(answer_[i][j].second).EndDict();
+					
 				}
-				builder.EndDict().EndDict();
+				builder.EndArray().EndDict();
 			}
 			else {
 				builder.Key("result").Value("false").EndDict();
@@ -55,5 +39,6 @@ void JsonInput::SetNodeInput(int size) {
 	
 	builder.EndDict().EndDict();
 	json::Document doc(builder.Build());
-	json::Print(doc, std::cout);
+	std::ofstream answ("./answer.json");
+	json::Print(doc,answ);
 }

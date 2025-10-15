@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 #include <unordered_map>
+#include <unordered_set>
 struct entry {
 	size_t doc_id{};
 	float relev{};
@@ -22,7 +23,7 @@ class SearchServer
 {
 public:
 	SearchServer() = default;
-	SearchServer(InvertedIndex& index) : index_(index){}
+	SearchServer(InvertedIndex& index,int size) : index_(index),size_(size){}
 	void AddRequests(json::Node rut);
 	void FindDocument();
 	std::vector < std::vector<std::pair<int, float>>>& GetAnswer() {
@@ -30,7 +31,8 @@ public:
 	}
 private:
 	InvertedIndex index_;
-	std::map<int,std::set<std::string>> requests_;
+	int size_{};
+	std::map<int,std::unordered_set<std::string>> requests_;
 	std::vector < std::vector<std::pair<int, float>>> answer_vec_;
 };
 

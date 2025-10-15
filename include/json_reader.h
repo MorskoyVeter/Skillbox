@@ -6,7 +6,7 @@
 #include <map>
 #include <iostream>
 #include <sstream>
-
+#include <algorithm> 
 class ConverterJSON {
 public:
 	ConverterJSON() = default;
