@@ -1,86 +1,60 @@
 #include "search_server.h"
-#include <algorithm>
-#include <iostream>
-
-std::vector<std::string> SplitIntoWord(const std::string& str) {
-std::istringstream my_streamvv(str);
-std::string strtemp;
-std::vector<std::string> splitvec;
-while (!my_streamvv.eof()) {
-	my_streamvv >> strtemp;
-	splitvec.push_back(strtemp);
-}
-return splitvec;
-}
-
-void SearchServer::AddRequests(json::Node rut) {
-	std::map<std::string, json::Node> req=rut.AsDict();
-	std::vector<json::Node> vec_str = req["requests"].AsArray();
-	for (int i = 0;i < vec_str.size();i++) {
-		std::vector<std::string> str;
-		str = SplitIntoWord(vec_str[i].AsString());
-		if (str.size() > 10) {
-			std::cout << "string in "<<i+1<<" requests more 10 words" << std::endl;
-		}
-		requests_[i].insert(str.begin(), str.end());
-		if (i > 1000) {
-			std::cout << "exceeded limit 1000 requests" << std::endl;
+std::vector<std::vector<RelativeIndex>> SearchServer::search(const std::vector<std::string>& queries_input) {
+	std::vector<std::set<std::string>> unig_requests;
+	for (auto& str : queries_input) {
+		std::istringstream my_streamvv(str);
+		std::string strtr;
+		unig_requests.push_back({});
+		int x = 0;
+		while(my_streamvv>>strtr && x<10){
+			unig_requests.back().insert(strtr);
+			if (!std::all_of(strtr.begin(), strtr.end(), islower)) {
+				std::cout << strtr << " not a-z"<<std::endl;
+			}
+			++x;
 		}
 	}
-	
-}
-
-void SearchServer::FindDocument() {
-	for (const auto& [key, var] : requests_) {
-		std::unordered_map<int, float> summrel{};
-		for (const auto& str : var) {
-			if (index_.word_to_document_freqs_.count(str) == 0) {
+	std::vector<std::vector<std::pair<int, std::string>>> req_sort_sum(unig_requests.size());
+	std::vector<std::map<size_t, size_t>> m_coun(unig_requests.size());
+	std::vector<Entry> ent;
+	for (int i = 0;i < unig_requests.size();i++) {
+		auto it = unig_requests[i].begin();
+		size_t siz = 0;
+		for (;it != unig_requests[i].end();it++) {
+			ent = index_.GetWordCount(*it);
+			if (ent.empty()) {
 				continue;
 			}
-			for (int i = 0;i < index_.word_to_document_freqs_[str].size();i++) {
-				if (i == size_) {
-					break;
-				}
-				summrel[index_.word_to_document_freqs_[str][i].doc_id]
-					+= index_.word_to_document_freqs_[str][i].relev;
+			size_t sum = 0;
+			for (const auto& cn : ent) {
+				sum += cn.count;
 			}
+			req_sort_sum[i].push_back({ sum,*it });
 		}
-		std::vector<std::pair<int, float>> ans;
-		for (auto it = summrel.begin();it != summrel.end();it++) {
-			ans.push_back(*it);
+		std::sort(req_sort_sum[i].begin(), req_sort_sum[i].end(), [](const auto& lhs,const auto& rhs) {
+			return lhs.first < rhs.first;
+		});
+		for (int j = 0;j < req_sort_sum[i].size();j++) {
+			ent = index_.GetWordCount(req_sort_sum[i][j].second);
+			for (auto v : ent) {
+				m_coun[i][v.doc_id] += v.count;
+			}
+        }
+	}
+	RelativeIndex r_index;
+	std::vector<std::vector<RelativeIndex>> rel_ind(unig_requests.size());
+	for (size_t j = 0;j < rel_ind.size();j++) {
+		for (const auto& [key,value]:m_coun[j]) {
+			r_index.doc_id = key;
+			r_index.rank = value/ (float)index_.GetSize()[key];
+				rel_ind[j].push_back(r_index);
 		}
-		std::sort(ans.begin(), ans.end(), [](const auto& lhs, const auto& rhs) {
-			if (lhs.second != rhs.second) {
-				return lhs.second > rhs.second;
+		std::sort(rel_ind[j].begin(), rel_ind[j].end(), [](const auto& lhs, const auto& rhs) {
+			if (lhs.rank == rhs.rank) {
+				return lhs.doc_id < rhs.doc_id;
 			}
-			else {
-				return lhs.first > rhs.first;
-			}
+			return lhs.rank > rhs.rank;
 			});
-	answer_vec_.emplace_back(ans);
 	}
-}
-
-InvertedIndex::InvertedIndex(std::map<int, std::vector<std::string>>& docs) : docs_(docs) {
-	for (int i = 0;i < docs.size();i++) {
-		const float inv_word_count = 1.0 / docs[i].size();
-		entry entr;
-		entr.doc_id = i;
-		entr.relev = inv_word_count;
-		for (const std::string& word : docs[i]) {
-			if (word_to_document_freqs_[word].size() == 0) {
-				word_to_document_freqs_[word].push_back(entr);
-			}
-			else {
-				if (word_to_document_freqs_[word].back().doc_id != i) {
-					entr.doc_id = i;
-					entr.relev = inv_word_count;
-					word_to_document_freqs_[word].push_back(entr);
-				}
-				else {
-					word_to_document_freqs_[word].back().relev += inv_word_count;
-				}
-			}
-		}
-	}
+	return rel_ind;
 }

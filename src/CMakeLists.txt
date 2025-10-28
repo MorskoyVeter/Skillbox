@@ -1,4 +1,17 @@
 cmake_minimum_required(VERSION 3.17)
 
-add_executable(MyProject main.cpp ${MY_INCLUDE_DIR}/json.h json.cpp ${MY_INCLUDE_DIR}/json_reader.h json_reader.cpp ${MY_INCLUDE_DIR}/json_input.h json_input.cpp ${MY_INCLUDE_DIR}/json_builder.h json_builder.cpp ${MY_INCLUDE_DIR}/search_server.h search_server.cpp)
-target_include_drectories(MyProject PUBLIC ${MY_INCLUDE_DIR})
+project(search_engine VERSION 1.0)
+
+set(CMAKE_CXX_STANDARD 17)
+
+add_executable(search_engine
+
+  src/main.cpp
+
+  src/json.cpp src/json_builder.cpp src/json_input.cpp
+
+  src/json_reader.cpp src/search_server.cpp
+
+)
+
+target_include_directories(search_engine PUBLIC ${CMAKE_SOURCE_DIR}/include)
